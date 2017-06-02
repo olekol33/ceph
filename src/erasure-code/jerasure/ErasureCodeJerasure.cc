@@ -85,7 +85,7 @@ int ErasureCodeJerasure::parse(ErasureCodeProfile &profile,
     chunk_mapping.clear();
     err = -EINVAL;
   }
-  err |= sanity_check_k(k, ss);
+  //err |= sanity_check_k(k, ss);
   return err;
 }
 

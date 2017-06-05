@@ -1,5 +1,48 @@
-#include "ErasureCodeOptLrc.h"
+#include <errno.h>
+#include <algorithm>
 
+#include "ErasureCodeOptLrc.h"
+#include "ErasureCodeOptLrc_configs.h"
+#include "include/str_map.h"
+#include "common/debug.h"
+#include "crush/CrushWrapper.h"
+#include "osd/osd_types.h"
+#include "include/stringify.h"
+#include "erasure-code/ErasureCodePlugin.h"
+#include "json_spirit/json_spirit_writer.h"
+#include "include/assert.h"
+
+extern "C" {
+#include "jerasure.h"
+#include "reed_sol.h"
+#include "galois.h"
+#include "liberation.h"
+}
+
+#define dout_subsys ceph_subsys_osd
+#undef dout_prefix
+#define dout_prefix _prefix(_dout)
+#define BASIC_BLOCK_SIZE 67108864
+
+OptLRC_Configs optlrc_configs;
+POptLRC pOptLRC_G = optlrc_configs.configs[ErasureCodeOptLrc::n][ErasureCodeOptLrc::k][ErasureCodeOptLrc::r];
+inline unsigned int get_alignment()
+{
+    return BASIC_BLOCK_SIZE;
+}
+
+inline unsigned int get_chunk_size(unsigned int object_size)
+{
+    unsigned int alignment = get_alignment();
+    unsigned int data_chunk_count = ErasureCodeOptLrc::k;
+    unsigned int chunk_size = (object_size + data_chunk_count - 1) / data_chunk_count;
+    unsigned int modulo = chunk_size % alignment;
+    if (modulo) {
+        chunk_size += alignment - modulo;
+    }
+    return chunk_size;
+}
+/*
 unsigned int ErasureCodeOptLrc::get_chunk_size(unsigned int object_size) const
 {
   unsigned alignment = get_alignment();
@@ -23,8 +66,15 @@ unsigned int ErasureCodeOptLrc::get_chunk_size(unsigned int object_size) const
     assert(padded_length % k == 0);
     return padded_length / k;
   }
-}
+}*/
 
+  inline unsigned int get_chunk_count() {
+    return ErasureCodeOptLrc::n;
+  }
+
+  inline unsigned int get_data_chunk_count() {
+    return ErasureCodeOptLrc::k;
+  }
 int ErasureCodeOptLrc::encode_chunks(const set<int> &want_to_encode,
 				       map<int, bufferlist> *encoded)
 {
@@ -35,39 +85,37 @@ int ErasureCodeOptLrc::encode_chunks(const set<int> &want_to_encode,
   return 0;
 }
 
-void optlrc_encode(const set<int> &want_to_encode, char **data, char **coding, int blocksize)
+void ErasureCodeOptLrc::optlrc_encode(const set<int> &want_to_encode, char **data, char **coding, int blocksize)
 {
-    unsigned int data_chunk_count = get_data_chunk_count();
-    unsigned int row_count = get_row_count();
-    unsigned int row_of_chunk_size = chunk_size / row_count;
 	// TODO select correct group, local can be done with want_to_encode/r
 	unsigned int group = 0;
 	set<int> data_chunks;
 	
-	if (want_to_encode.size == 1) {
+	if (want_to_encode.size() == 1) {
+		unsigned int erased = *(want_to_encode.begin());
 		for (int i=0; i<k; i++) {
-			if (pOptLRC_G->optlrc_matrix[want_to_encode.begin()][i] != 0)
+			if (pOptLRC_G->optlrc_matrix[erased][i] != 0)
 				data_chunks.insert(i);
 		}
 	}
 	else {
-		for (i=0; i<k; i++)
+		for (int i=0; i<k; i++)
 			data_chunks.insert(i);
 	}
 	unsigned int optlrc_encode_local[k][n];
     //vector<int> init_rows(row_count);
-	i=0;
-	for (set<int>::iterator it; it = data_chunks.begin(); it != data_chunks.end(); ++it)
+	int i=0;
+	for (set<int>::iterator it = data_chunks.begin(); it != data_chunks.end(); ++it)
 	{
 		for (int j=0; j<k; j++) {
-			optlrc_encode_local[i][j] = pOptLRC_G->optlrc_matrix[(r+1)*group+j][it];
+			optlrc_encode_local[i][j] = pOptLRC_G->optlrc_matrix[(r+1)*group+j][*it];
 			i++;
 			//think how to multiply only partial data bus
 		}
 	}
 	//for (i=0; i<k; i++)
 	//TODO: adjust for arbitrary code length
-	char *src = data[0]
+	char *src = data[0];
 	char *dst = coding[0];	
     galois_w08_region_multiply(src,
                     optlrc_encode_local,
@@ -101,7 +149,7 @@ int ErasureCodeOptLrc::decode_chunks(const set<int> &want_to_read,
 				       map<int, bufferlist> *decoded)
 {
 	unsigned blocksize = (*chunks.begin()).second.length();
-	int erasure[n];
+	int erasures[n];
 	int erasures_count = 0;
 	char *data[k];
 	char *coding[n-k];
@@ -128,10 +176,10 @@ int ErasureCodeOptLrc::decode_chunks(const set<int> &want_to_read,
   
  	int i=0;
 	unsigned int optlrc_decode_local[k][n];	
-	for (set<int>::iterator it; it = decode_chunks.begin(); it != decode_chunks.end(); ++it)
+	for (set<int>::iterator it = decode_chunks.begin(); it != decode_chunks.end(); ++it)
 	{
 		for (int j=0; j<k; j++) {
-			optlrc_decode_local[i][j] = pOptLRC_G->optlrc_matrix[(r+1)*group+j][it];
+			optlrc_decode_local[i][j] = pOptLRC_G->optlrc_matrix[(r+1)*group+j][*it];
 			i++;
 			//think how to multiply only partial data bus
 		}
@@ -139,7 +187,7 @@ int ErasureCodeOptLrc::decode_chunks(const set<int> &want_to_read,
 	
 	//for (i=0; i<k; i++)
 	//TODO: adjust for arbitrary code length
-	char *src = data[0]
+	char *src = data[0];
 	char *dst = coding[0];	
     galois_w08_region_multiply(src,
                     optlrc_decode_local,
@@ -170,3 +218,4 @@ int ErasureCodeOptLrc::decode_chunks(const set<int> &want_to_read,
   assert(erasures_count > 0);
   return jerasure_decode(erasures, data, coding, blocksize);
 }*/
+

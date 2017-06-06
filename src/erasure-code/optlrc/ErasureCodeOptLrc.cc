@@ -81,7 +81,7 @@ int ErasureCodeOptLrc::encode_chunks(const set<int> &want_to_encode,
   char *chunks[n];
   for (int i = 0; i < n; i++)
     chunks[i] = (*encoded)[i].c_str();
-  optlrc_encode(want_to_encode, &chunks[0], &chunks[k], (*encoded)[0].length());
+  optlrc_encode(want_to_encode, &chunks[0], &chunks[k], (*encoded->begin()).second.length());
   return 0;
 }
 
@@ -102,7 +102,7 @@ void ErasureCodeOptLrc::optlrc_encode(const set<int> &want_to_encode, char **dat
 		for (int i=0; i<k; i++)
 			data_chunks.insert(i);
 	}
-	unsigned int optlrc_encode_local[k][n];
+	int optlrc_encode_local[k][n];
     //vector<int> init_rows(row_count);
 	int i=0;
 	for (set<int>::iterator it = data_chunks.begin(); it != data_chunks.end(); ++it)
@@ -115,13 +115,15 @@ void ErasureCodeOptLrc::optlrc_encode(const set<int> &want_to_encode, char **dat
 	}
 	//for (i=0; i<k; i++)
 	//TODO: adjust for arbitrary code length
-	char *src = data[0];
 	char *dst = coding[0];	
-    galois_w08_region_multiply(src,
-                    optlrc_encode_local,
-                    blocksize,
-                    dst,
-                    0);		
+	for (i=0 ; i<k; i++) { 
+		char *src = data[0] + i*blocksize;
+		galois_w08_region_multiply(src,
+		                optlrc_encode_local[n][i],
+		                blocksize,
+		                dst,
+		                1);
+	}		
 }
     /*for (unsigned int chunk_index = 0; chunk_index < data_chunk_count; chunk_index++) {
         for (unsigned int row_index = 0; row_index < row_count; row_index++) {
@@ -148,8 +150,8 @@ int ErasureCodeOptLrc::decode_chunks(const set<int> &want_to_read,
 				       const map<int, bufferlist> &chunks,
 				       map<int, bufferlist> *decoded)
 {
-	unsigned blocksize = (*chunks.begin()).second.length();
-	int erasures[n];
+	int blocksize = (*chunks.begin()).second.length();
+	//int erasures[n];
 	int erasures_count = 0;
 	char *data[k];
 	char *coding[n-k];
@@ -159,7 +161,7 @@ int ErasureCodeOptLrc::decode_chunks(const set<int> &want_to_read,
 	
   for (int i =  0; i < n; i++) {
     if (chunks.find(i) == chunks.end()) {
-      erasures[erasures_count] = i;
+      //erasures[erasures_count] = i;
       erasures_count++;
     }
 	else 
@@ -187,13 +189,15 @@ int ErasureCodeOptLrc::decode_chunks(const set<int> &want_to_read,
 	
 	//for (i=0; i<k; i++)
 	//TODO: adjust for arbitrary code length
-	char *src = data[0];
 	char *dst = coding[0];	
-    galois_w08_region_multiply(src,
-                    optlrc_decode_local,
-                    blocksize,
-                    dst,
-                    0);	
+	for (i=0 ; i<k; i++) { 
+		char *src = data[0] + i*blocksize;
+		galois_w08_region_multiply(src,
+		                optlrc_decode_local[n][i],
+		                blocksize,
+		                dst,
+		                1);
+	}		
 	return 0;
 }	
 

@@ -15,25 +15,12 @@
 #define MAX_OPTLRC_CHUNKS   4
 
 typedef struct OptLRC {
-    /* Used for Decoding */
-    unsigned int optlrc_perms[MAX_OPTLRC_CHUNKS][MAX_MATRIX][MAX_MATRIX];
-
-    /* Used for Encoding */
-    //unsigned int optlrc_matrix[MAX_OPTLRC_CHUNKS][MAX_MATRIX][MAX_MATRIX];
-    unsigned int optlrc_matrix[MAX_MATRIX][MAX_MATRIX];
-    unsigned int optlrc_decode[MAX_OPTLRC_CHUNKS][MAX_MATRIX][MAX_MATRIX];
-    unsigned int optlrc_coeff[MAX_OPTLRC_CHUNKS][MAX_MATRIX][MAX_MATRIX];
-
-    /* In case chunk i failed, recover rows parity_rows[i] from the row parity */
-    unsigned int parity_rows[MAX_MATRIX][MAX_MATRIX];
-
-    /* In case chunk i failed, recover rows optlrc_rows[i] from the zigzag */
-    unsigned int optlrc_rows[MAX_OPTLRC_CHUNKS][MAX_MATRIX][MAX_MATRIX];
+    int optlrc_matrix[MAX_MATRIX][MAX_MATRIX];
 
 } OptLRC, *POptLRC;
 
-OptLRC optlrc_9_4_2 = {
-.optlrc_matrix = {
+struct OptLRC optlrc_9_4_2 = {
+optlrc_matrix : {
         {1, 0, 0, 0},
         {0, 1, 0, 0},
         {2, 2, 0, 0},

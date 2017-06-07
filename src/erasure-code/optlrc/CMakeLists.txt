@@ -19,6 +19,7 @@ set(jerasure_srcs
 
 set(optlrc_srcs
   ErasureCodeOptLrc.cc
+  ErasureCodePluginOptLrc.cc 
   $<TARGET_OBJECTS:erasure_code_objs>
   ${CMAKE_SOURCE_DIR}/src/common/str_map.cc
 )

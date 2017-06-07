@@ -15,22 +15,25 @@
 #define MAX_OPTLRC_CHUNKS   4
 
 typedef struct OptLRC {
-    int optlrc_matrix[MAX_MATRIX][MAX_MATRIX];
+    int optlrc_encode[MAX_MATRIX][MAX_MATRIX];
+    int optlrc_perm[MAX_MATRIX];
 
 } OptLRC, *POptLRC;
 
 struct OptLRC optlrc_9_4_2 = {
-optlrc_matrix : {
+optlrc_encode : {
         {1, 0, 0, 0},
         {0, 1, 0, 0},
-        {2, 2, 0, 0},
         {0, 0, 1, 0},
         {0, 0, 0, 1},
+        {2, 2, 0, 0},
         {0, 0, 1, 2},
         {0, 0, 0, 1},
         {2, 2, 0, 0},
         {0, 0, 1, 2}
-}
+},
+optlrc_perm : {0,1,3,4,2,5,6,7,8}
+
 
 };
 

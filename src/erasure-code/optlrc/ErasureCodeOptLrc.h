@@ -13,32 +13,9 @@ public:
   std::string DEFAULT_K;
   static int r;
   std::string DEFAULT_R;
-  /*const char *technique;
-  string ruleset_root;
-  string ruleset_failure_domain;
-  bool per_chunk_alignment;*/
-
-  /*explicit ErasureCodeOptLrc(const char *_technique) :
-    n(0),
-    DEFAULT_N("4"),
-    k(0),
-    DEFAULT_K("2"),
-    r(0),
-    DEFAULT_R("2"),
-    technique(_technique),
-    ruleset_root(DEFAULT_RULESET_ROOT),
-    ruleset_failure_domain(DEFAULT_RULESET_FAILURE_DOMAIN),
-    per_chunk_alignment(false)
-  {}*/
 
   virtual ~ErasureCodeOptLrc() {}
-  
-/*  virtual int create_ruleset(const string &name,
-			     CrushWrapper &crush,
-			     ostream *ss) const;*/
-
-
-
+  virtual int init(ErasureCodeProfile &profile, ostream *ss);
   virtual unsigned int get_chunk_size(unsigned int object_size) const;
 
   virtual int encode_chunks(const set<int> &want_to_encode,
@@ -54,12 +31,15 @@ virtual void optlrc_encode(const set<int> &want_to_encode,
 							char **data, char **coding, 
 							int blocksize);
 						   
-/*							   
-  virtual unsigned get_alignment() const = 0;
-  virtual void prepare() = 0;
-  static bool is_prime(int value);
+virtual int minimum_to_decode(const set<int> &want_to_read,
+			const set<int> &available,
+			set<int> *minimum);
+
+virtual int create_ruleset(const string &name,
+		     CrushWrapper &crush,
+		     ostream *ss) const;
 protected:
-  virtual int parse(ErasureCodeProfile &profile, ostream *ss);*/
+  virtual int parse(ErasureCodeProfile &profile, ostream *ss);
 };
 
 #endif

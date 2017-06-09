@@ -7,6 +7,7 @@ check_LTLIBRARIES =
 
 include erasure-code/jerasure/Makefile.am
 include erasure-code/lrc/Makefile.am
+include erasure-code/optlrc/Makefile.am
 include erasure-code/shec/Makefile.am
 
 if WITH_BETTER_YASM_ELF64

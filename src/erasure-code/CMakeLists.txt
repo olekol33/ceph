@@ -69,6 +69,7 @@ include_directories(jerasure/gf-complete/include)
 include_directories(jerasure)
 add_subdirectory(jerasure)
 add_subdirectory(lrc)
+add_subdirectory(optlrc)
 add_subdirectory(shec)
 
 if (HAVE_BETTER_YASM_ELF64)
@@ -85,6 +86,7 @@ add_library(erasure_code_objs OBJECT ErasureCode.cc)
 add_custom_target(erasure_code_plugins DEPENDS
     ${EC_ISA_LIB}
     ec_lrc
+    ec_optlrc
     ec_jerasure_sse3
     ec_jerasure_sse4
     ec_jerasure)

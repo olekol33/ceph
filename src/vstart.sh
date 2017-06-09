@@ -446,6 +446,8 @@ if [ "$start_mon" -eq 1 ]; then
         osd pool default min size = 1
         osd failsafe full ratio = .99
         mon osd reporter subtree level = osd
+	osd max object name len = 256
+	osd max object namespace len = 64
         mon osd full ratio = .99
         mon data avail warn = 10
         mon data avail crit = 1

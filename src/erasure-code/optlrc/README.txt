@@ -19,7 +19,7 @@ Optimal-LRC
 -----------------------
 Optimal-LRC is a recently proposed [1] full-LRC . In this code, k data blocks and m global parities are divided into groups of size r, and a local parity is added to each group, allowing repair of any lost block by the r surviving blocks in its group. r does not necessarily divide m + k, but Optimal-LRC requires that n mod (r + 1) != 1.
 
-In 'Optimal LRC codes for all lenghts n<= q' [4] a new construction was developed based on the original construction. In the new construiction Optimal-LRC has optimal minimum distance for all n mod (r + 1) != 1. This folder contains the new implementation.
+In 'Optimal LRC codes for all lenghts n<= q' [4] a new construction was developed based on the original construction. In the new construiction Optimal-LRC has optimal minimum distance for all n mod (r + 1) != 1. This folder contains the new implementation (with the exception of having the current decode function support only a single erasure in a local group, while Optimal-LRC can support multiple erasures).
 
 
 -----------------------
@@ -78,6 +78,7 @@ The encode proecess works the following:
 4) Pass the generator matrix, pointers to data and coding chunks and blocksize to jerasure_matrix_encode for encoding
 
 Decode process:
+Our implementation of Optimal-LRC was devised to simulate only a single erasure in a local group, while Optimal-LRC in general supports repair of multiple erasures.
 minimum_to_decode: Calculates the minimum number and IDs of chunks required to decode an erased chunk. It's based on the main assumption of our implementation, that we have at most one erasure in each local group.
 If a chunk in a local group is erased, compiles a list of all surviving chunks.
 
@@ -119,7 +120,11 @@ Was fixed to:
           
 - The code was implemented on Ceph 12.0.2
 
+- For the following (n,k,r) combinations the generator matrix has already been computed and is available in ErasureCodeOptLrc_configs.h: (9,4,2), (10,6,4), (10,6,3), (15,8,4), (15,8,5), (16,12,7), (18,12,3), (18,12,4), (15,10,4), (14,10,4), (12,8,3), (12,8,4), (17,12,4), (14,10,6), (14,10,5), (12,8,5), (17,12,5), (17,12,6), (15,10,5)
+
 - Matlab code will generate a generator matrix for most (n,k,r), however for r=5 the code will generate a generator polynomial, but a generator matrix needs to be calculated manually.
+The case of r=5 is mathematically unique since it doesn't fall into the general cases presented in the original paper [1]. It is also specifically mentioned in the original paper. 
+
 
 -----------------------
 Running instructions
